@@ -172,7 +172,6 @@ function read_bit_int(env, local_offset, bit_len) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-const i_fs = require('fs');
 function read_cfe_entry(env) {
    let s, p;
    s = env.offset;
@@ -387,6 +386,7 @@ function fill_term_block_prefix(env, sys) {
          block.prefix = (term_block.prefix || '') + term.value;
       });
    }
+   // TODO: not exact correct
    for (let i = 1, n = sys.term_blocks.length; i < n; i++) {
       let term_block = sys.term_blocks[i];
       let last_term_block = sys.term_blocks[i-1];

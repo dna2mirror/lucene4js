@@ -31,6 +31,7 @@ const path = process.argv[2] || '/Users/admin/Desktop/test/dna/mirror/lucene4js/
 const field_id = 2;
 
 function tf(engine) {
+   // should read tf from .doc; no time thus generate tf at runtime
    let doc_bulks = engine.stored_field_chunks;
    let doc_ri = {}, doc_tf = {}, doc_df = {};
    doc_bulks.forEach((bulk, bulk_index) => {
@@ -54,6 +55,7 @@ function tf(engine) {
 }
 
 function df(engine, term) {
+   // read df from Lucene .tim
    let term_bulks = engine.term_blocks;
    let target = null;
    term_bulks.forEach((bulk) => {
