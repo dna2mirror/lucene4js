@@ -382,7 +382,7 @@ function fill_term_block_prefix(env, sys) {
       let term_block = sys.term_blocks[i];
       term_block.terms.forEach((term) => {
          if (!term.delta_fp) return;
-         let block = sys.term_blocks.filter((one) => one.start_fp === term_block.start_fp - term.delta_fp)[0];
+         let block = sys.term_blocks.filter((one) => one.start_fp >= term_block.start_fp - term.delta_fp)[0];
          if (!block) return;
          block.prefix = (term_block.prefix || '') + term.value;
       });
