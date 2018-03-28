@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lucene4js</title>
+<link rel="stylesheet" type="text/css" href="/css/style.css">
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:300'
+  rel='stylesheet' type='text/css'>
+</head>
+<body>
+  <div class="container">
+    <fieldset>
+      <form action="/" method="post">
+        <input name="query" type="text" class="input"
+          placeholder="Type a query" required> <input type="submit"
+          class="search-button" value="Search">
+      </form>
+      <% if(search_result !== null)
+      { %> <% for (var result_index = 0;result_index < search_result.length; result_index++) 
+        { %>
+            <li><%= search_result[result_index].value %>
+            </li> 
+        <% } 
+      %> <% } %> <%
+      if(error !== null){ %>
+      <p><%= error %></p>
+      <% } %>
+    </fieldset>
+  </div>
+</body>
+</html>
