@@ -27,7 +27,7 @@ function tokenize(text, keep_stops) {
 }
 
 // e.g. /lucene/data
-const path = process.argv[2] || '/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data';
+const path = process.argv[2] || 'C:/Users/kuldeeps/Desktop/test_file';
 const field_id = 2;
 
 function tf(engine) {
@@ -70,10 +70,12 @@ function search(engine, text) {
    let doc_set = {};
    tokens.forEach((term) => {
       let ri = engine.index.doc_ri[term];
-      ri.forEach((doc) => {
+      ri != null && ri.forEach((doc) => {
          doc_set[doc[0] + ',' + doc[1]] = true;
       });
    });
+
+
    doc_set = Object.keys(doc_set).map((id) => {
       let index = id.split(',');
       return {

@@ -29,6 +29,11 @@ const i_lucene = require('./version1');
 function search(line){
   if (!line) return [];
   result = i_lucene.search(line);
+  
+  if(Object.keys(result).length === 0) {
+   return [ { info: '',
+    value: '"\\"No Match found\\""' }];
+  }
   result = result.map((one) => {
     return {
       info: one.meta[0] + '#' + one.meta[1],
