@@ -357,31 +357,51 @@ function read_term_block(env, sys) {
    for (let i = term_block.term_n; i > 0; i--) {
       term_block.terms.push(read_term_string(env, sub));
    }
-   term_block.terms.forEach((term) => {
-      if (!term.delta_fp) return;
-      let prefix_fp = term_block.start_fp - term.delta_fp;
-      let target = sys.term_blocks.filter((block) => block.start_fp === prefix_fp)[0];
-      if (target) {
-         if (!target.prefix) target.prefix = '';
-         target.prefix = term.value + target.prefix;
-      }
-   });
    let stats = {buf: read_byteref(env, sub), offset: 0};
    for (let i = 0; i < n; i++) {
       let term = term_block.terms[i];
-      if (term.delta_fp !== undefined) continue;
-      term.doc_freq = read_v_int(stats);
-      term.total_term_freq = read_v_long(stats);
+      if (term.delta_fp) {
+      } else {
+         term.doc_freq = read_v_int(stats);
+         term.total_term_freq = read_v_long(stats);
+      }
    }
    let metas = {buf: read_byteref(env, sub), offset: 0};
-   // TODO: not correct
    for (let i = 0; i < n; i++) {
       let term = term_block.terms[i];
-      if (term.delta_fp !== undefined) continue;
-      term.doc_fp_delta = read_v_long(metas);
-      term.pos_fp_delta = read_v_long(metas);
+      if (term.delta_fp) {
+      } else {
+         term.doc_fp_delta = read_v_long(metas);
+         term.pos_fp_delta = read_v_long(metas);
+      }
    }
    sys.term_blocks.push(term_block);
+}
+function fill_term_block_prefix(env, sys) {
+   for (let i = sys.term_blocks.length-1; i >= 0; i--) {
+      let term_block = sys.term_blocks[i];
+      term_block.terms.forEach((term) => {
+         if (!term.delta_fp) return;
+         let block = sys.term_blocks.filter((one) => one.start_fp === term_block.start_fp - term.delta_fp)[0];
+         if (!block) return;
+         block.prefix = (term_block.prefix || '') + term.value;
+      });
+   }
+   for (let i = 1, n = sys.term_blocks.length; i < n; i++) {
+      let term_block = sys.term_blocks[i];
+      let last_term_block = sys.term_blocks[i-1];
+      if (term_block.prefix) continue;
+      if (!last_term_block.prefix) continue;
+      if (term_block.terms.filter((term) => term.delta_fp).length > 0) continue; // not correct
+      term_block.prefix = last_term_block.prefix;
+   }
+   for (let i = 0, n = sys.term_blocks.length; i < n; i++) {
+      let term_block = sys.term_blocks[i];
+      if (!term_block.prefix) continue;
+      term_block.terms.forEach((term) => {
+         term.value = term_block.prefix + term.value;
+      });
+   }
 }
 
 function read_tim(env, sys) {
@@ -398,6 +418,7 @@ function read_tim(env, sys) {
    while (env.offset < directory_startIndex) {
       read_term_block(env, sys);
    }
+   fill_term_block_prefix(env, sys);
    env.offset = directory_startIndex;
    sys.field_n = read_v_int(env);
    sys.fields = [];
