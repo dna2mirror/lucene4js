@@ -24,9 +24,17 @@ app.listen(3000, function () {
   console.log('Example app listening on port 3000!')
 })
 
-//TODO- Implement this method
+const i_lucene = require('./version1');
+
 function search(line){
-	result = [{value: line}, {value: line},{value: line}, {value: line}];
-	console.log(result)
+  if (!line) return [];
+  result = i_lucene.search_api(line);
+  result = result.map((one) => {
+    return {
+      info: one.meta[0] + '#' + one.meta[1],
+      value: one.meta[2]
+    };
+  });
+	console.log(result);
 	return result;
 }

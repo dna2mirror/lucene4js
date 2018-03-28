@@ -102,7 +102,7 @@ function search(engine, text) {
    return doc_set;
 }
 
-function search_api(path, text) {
+function search_api(text) {
    let cfs_data = i_lucene.readCFS(
       i_path.join(path, '_0.cfs'),
       i_lucene.readCFE(i_path.join(path, '_0.cfe'))
