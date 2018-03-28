@@ -357,31 +357,51 @@ function read_term_block(env, sys) {
    for (let i = term_block.term_n; i > 0; i--) {
       term_block.terms.push(read_term_string(env, sub));
    }
-   term_block.terms.forEach((term) => {
-      if (!term.delta_fp) return;
-      let prefix_fp = term_block.start_fp - term.delta_fp;
-      let target = sys.term_blocks.filter((block) => block.start_fp === prefix_fp)[0];
-      if (target) {
-         if (!target.prefix) target.prefix = '';
-         target.prefix = term.value + target.prefix;
-      }
-   });
    let stats = {buf: read_byteref(env, sub), offset: 0};
    for (let i = 0; i < n; i++) {
       let term = term_block.terms[i];
-      if (term.delta_fp !== undefined) continue;
-      term.doc_freq = read_v_int(stats);
-      term.total_term_freq = read_v_long(stats);
+      if (term.delta_fp) {
+      } else {
+         term.doc_freq = read_v_int(stats);
+         term.total_term_freq = read_v_long(stats);
+      }
    }
    let metas = {buf: read_byteref(env, sub), offset: 0};
-   // TODO: not correct
    for (let i = 0; i < n; i++) {
       let term = term_block.terms[i];
-      if (term.delta_fp !== undefined) continue;
-      term.doc_fp_delta = read_v_long(metas);
-      term.pos_fp_delta = read_v_long(metas);
+      if (term.delta_fp) {
+      } else {
+         term.doc_fp_delta = read_v_long(metas);
+         term.pos_fp_delta = read_v_long(metas);
+      }
    }
    sys.term_blocks.push(term_block);
+}
+function fill_term_block_prefix(env, sys) {
+   for (let i = sys.term_blocks.length-1; i >= 0; i--) {
+      let term_block = sys.term_blocks[i];
+      term_block.terms.forEach((term) => {
+         if (!term.delta_fp) return;
+         let block = sys.term_blocks.filter((one) => one.start_fp === term_block.start_fp - term.delta_fp)[0];
+         if (!block) return;
+         block.prefix = (term_block.prefix || '') + term.value;
+      });
+   }
+   for (let i = 1, n = sys.term_blocks.length; i < n; i++) {
+      let term_block = sys.term_blocks[i];
+      let last_term_block = sys.term_blocks[i-1];
+      if (term_block.prefix) continue;
+      if (!last_term_block.prefix) continue;
+      if (term_block.terms.filter((term) => term.delta_fp).length > 0) continue; // not correct
+      term_block.prefix = last_term_block.prefix;
+   }
+   for (let i = 0, n = sys.term_blocks.length; i < n; i++) {
+      let term_block = sys.term_blocks[i];
+      if (!term_block.prefix) continue;
+      term_block.terms.forEach((term) => {
+         term.value = term_block.prefix + term.value;
+      });
+   }
 }
 
 function read_tim(env, sys) {
@@ -398,6 +418,7 @@ function read_tim(env, sys) {
    while (env.offset < directory_startIndex) {
       read_term_block(env, sys);
    }
+   fill_term_block_prefix(env, sys);
    env.offset = directory_startIndex;
    sys.field_n = read_v_int(env);
    sys.fields = [];
@@ -488,9 +509,20 @@ function read_stored_field_chunk(env, sys) {
    }
    chunk.start_fp = env.offset;
    let docs = i_utils.Bytes.decompressLZ4(env.buf.slice(env.offset, env.offset+chunk.doc_length), chunk.doc_length);
-   chunk.raw = docs.data.toString();
    chunk.length = docs.offset;
    env.offset += docs.offset;
+   chunk.raw = [];
+   docs.buf = docs.data;
+   docs.offset = 0;
+   for (let i = chunk.doc_n; i > 0; i--) {
+      let record = [];
+      for (let j = chunk.doc_field_counts; j > 0; j--) {
+         read_v_int(docs);
+         // assume all string field
+         record.push(read_string(docs));
+      }
+      chunk.raw.push(record);
+   }
    if (chunk.doc_n > 0) sys.stored_field_chunks.push(chunk);
 }
 
@@ -688,16 +720,6 @@ function get_segments_N(path) {
    let file_list = i_utils.Storage.list_files(path);
    return file_list.filter((filename) => i_path.basename(filename).startsWith('segments_'))[0];
 }
-
-console.log(JSON.stringify(
-   read_cfs(
-      '/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfs',
-      read_cfe('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfe')
-   ), null , 3
-));
-// console.log(JSON.stringify(read_cfe('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfe'), null , 3));
-// read_si('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.si');
-// console.log(JSON.stringify(read_segments_N(get_segments_N('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data')), null, 3));
 
 // .doc, .tim, .pos, .nvd, .fdx, .tip, .fdt, .nvm, .fnm
 /**
