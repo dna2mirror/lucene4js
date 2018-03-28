@@ -28,7 +28,7 @@ const i_lucene = require('./version1');
 
 function search(line){
   if (!line) return [];
-  result = i_lucene.search_api(line);
+  result = i_lucene.search(line);
   result = result.map((one) => {
     return {
       info: one.meta[0] + '#' + one.meta[1],

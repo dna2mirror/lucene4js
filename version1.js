@@ -123,5 +123,5 @@ function search_api(text) {
 // console.log(JSON.stringify(result, null, 3));
 
 module.exports = {
-   search_api
+   search: search_api
 }
