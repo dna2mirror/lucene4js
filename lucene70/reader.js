@@ -509,9 +509,20 @@ function read_stored_field_chunk(env, sys) {
    }
    chunk.start_fp = env.offset;
    let docs = i_utils.Bytes.decompressLZ4(env.buf.slice(env.offset, env.offset+chunk.doc_length), chunk.doc_length);
-   chunk.raw = docs.data.toString();
    chunk.length = docs.offset;
    env.offset += docs.offset;
+   chunk.raw = [];
+   docs.buf = docs.data;
+   docs.offset = 0;
+   for (let i = chunk.doc_n; i > 0; i--) {
+      let record = [];
+      for (let j = chunk.doc_field_counts; j > 0; j--) {
+         read_v_int(docs);
+         // assume all string field
+         record.push(read_string(docs));
+      }
+      chunk.raw.push(record);
+   }
    if (chunk.doc_n > 0) sys.stored_field_chunks.push(chunk);
 }
 
@@ -709,16 +720,6 @@ function get_segments_N(path) {
    let file_list = i_utils.Storage.list_files(path);
    return file_list.filter((filename) => i_path.basename(filename).startsWith('segments_'))[0];
 }
-
-console.log(JSON.stringify(
-   read_cfs(
-      '/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfs',
-      read_cfe('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfe')
-   ), null , 3
-));
-// console.log(JSON.stringify(read_cfe('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.cfe'), null , 3));
-// read_si('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data/_0.si');
-// console.log(JSON.stringify(read_segments_N(get_segments_N('/Users/admin/Desktop/test/dna/mirror/lucene4js/local/data')), null, 3));
 
 // .doc, .tim, .pos, .nvd, .fdx, .tip, .fdt, .nvm, .fnm
 /**
